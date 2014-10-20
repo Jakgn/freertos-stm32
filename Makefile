@@ -55,19 +55,19 @@ CFLAGS += -D"assert_param(expr)=((void)0)"
 
 #My restart
 OBJS += \
-      $(PWD)/CORTEX_M4F_STM32F4/main.o \
+      $(PWD)/src/main.o \
       $(PWD)/CORTEX_M4F_STM32F4/startup/system_stm32f4xx.o \
       #$(PWD)/CORTEX_M4F_STM32F4/stm32f4xx_it.o \
 
 OBJS += \
-      $(PWD)/croutine.o \
-      $(PWD)/event_groups.o \
-      $(PWD)/list.o \
-      $(PWD)/queue.o \
-      $(PWD)/tasks.o \
-      $(PWD)/timers.o \
-      $(PWD)/portable/GCC/ARM_CM4F/port.o \
-      $(PWD)/portable/MemMang/heap_1.o \
+      $(PWD)/CORTEX_M4F_STM32F4/Libraries/FreeRTOS/croutine.o \
+      $(PWD)/CORTEX_M4F_STM32F4/Libraries/FreeRTOS/event_groups.o \
+      $(PWD)/CORTEX_M4F_STM32F4/Libraries/FreeRTOS/list.o \
+      $(PWD)/CORTEX_M4F_STM32F4/Libraries/FreeRTOS/queue.o \
+      $(PWD)/CORTEX_M4F_STM32F4/Libraries/FreeRTOS/tasks.o \
+      $(PWD)/CORTEX_M4F_STM32F4/Libraries/FreeRTOS/timers.o \
+      $(PWD)/CORTEX_M4F_STM32F4/Libraries/FreeRTOS/portable/GCC/ARM_CM4F/port.o \
+      $(PWD)/CORTEX_M4F_STM32F4/Libraries/FreeRTOS/portable/MemMang/heap_1.o \
 
 OBJS += \
     $(PWD)/CORTEX_M4F_STM32F4/Libraries/STM32F4xx_StdPeriph_Driver/src/misc.o \
@@ -89,14 +89,14 @@ OBJS += \
     $(PWD)/Utilities/STM32F429I-Discovery/stm32f429i_discovery_ioe.o
 
 # Traffic
-OBJS += $(PWD)/CORTEX_M4F_STM32F4/traffic/draw_graph.o
-OBJS += $(PWD)/CORTEX_M4F_STM32F4/traffic/move_car.o
-CFLAGS += -I $(PWD)/CORTEX_M4F_STM32F4/traffic/include
+OBJS += $(PWD)/src/draw_graph.o
+OBJS += $(PWD)/src/move_car.o
+CFLAGS += -I $(PWD)/include
 
 CFLAGS += -DUSE_STDPERIPH_DRIVER
 CFLAGS += -I $(PWD)/CORTEX_M4F_STM32F4 \
-	  -I $(PWD)/include \
-	  -I $(PWD)/portable/GCC/ARM_CM4F \
+	  -I $(PWD)/CORTEX_M4F_STM32F4/Libraries/FreeRTOS/include \
+	  -I $(PWD)/CORTEX_M4F_STM32F4/Libraries/FreeRTOS/portable/GCC/ARM_CM4F \
 	  -I $(PWD)/CORTEX_M4F_STM32F4/board \
 	  -I $(PWD)/CORTEX_M4F_STM32F4/Libraries/CMSIS/Device/ST/STM32F4xx/Include \
 	  -I $(PWD)/CORTEX_M4F_STM32F4/Libraries/CMSIS/Include \
