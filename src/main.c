@@ -30,10 +30,12 @@
 #include "game.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "semphr.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 /** @addtogroup Template
  * @{
  */
@@ -41,41 +43,88 @@
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
-extern uint8_t demoMode;
-	void
-prvInit()
+
+void RCC_Configuration(void)
+{
+      /* --------------------------- System Clocks Configuration -----------------*/
+      /* USART1 clock enable */
+      RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
+      /* GPIOA clock enable */
+      RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+}
+
+void GPIO_Configuration(void)
+{
+    GPIO_InitTypeDef GPIO_InitStructure;
+
+    /*-------------------------- GPIO Configuration ----------------------------*/
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+    /* Connect USART pins to AF */
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_USART1);   // USART1_TX
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_USART1);  // USART1_RX
+}
+
+void USART1_Configuration(void)
+{
+    USART_InitTypeDef USART_InitStructure;
+
+    /* USARTx configuration ------------------------------------------------------*/
+    /* USARTx configured as follow:
+     *  - BaudRate = 9600 baud
+     *  - Word Length = 8 Bits
+     *  - One Stop Bit
+     *  - No parity
+     *  - Hardware flow control disabled (RTS and CTS signals)
+     *  - Receive and transmit enabled
+     */
+    USART_InitStructure.USART_BaudRate = 115200;
+    USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+    USART_InitStructure.USART_StopBits = USART_StopBits_1;
+    USART_InitStructure.USART_Parity = USART_Parity_No;
+    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+    USART_Init(USART1, &USART_InitStructure);
+    USART_Cmd(USART1, ENABLE);
+}
+
+void prvInit()
 {
 	//LCD init
 	LCD_Init();
 	IOE_Config();
 	LTDC_Cmd( ENABLE );
 	LCD_LayerInit();
+	//Two LCD Layers setting initial
+	LCD_SetLayer( LCD_BACKGROUND_LAYER );
+	LCD_Clear( LCD_COLOR_BLACK );
+	LCD_SetTransparency(0x00);
 	LCD_SetLayer( LCD_FOREGROUND_LAYER );
+	LCD_SetTransparency(0xFF);
 	LCD_Clear( LCD_COLOR_BLACK );
 	LCD_SetTextColor( LCD_COLOR_WHITE );
 	//Button
 	STM_EVAL_PBInit( BUTTON_USER, BUTTON_MODE_GPIO );
 	//LED
 	STM_EVAL_LEDInit( LED3 );
+	//Usart1
+    RCC_Configuration();
+    GPIO_Configuration();
+    USART1_Configuration();
+	//Random Init
+	RCC_AHB2PeriphClockCmd(RCC_AHB2Periph_RNG, ENABLE);
+	RNG_Cmd(ENABLE);
 }
-static void GameEventTask1( void *pvParameters )
+static void Usart1EventTask( void *pvParameters )
 {
-	while( 1 ){
-		GAME_EventHandler1();
-	}
+	Usart1_EventHandler();
 }
-static void GameEventTask2( void *pvParameters )
-{
-	while( 1 ){
-		GAME_EventHandler2();
-	}
-}
-static void GameEventTask3( void *pvParameters )
-{
-	while( 1 ){
-		GAME_EventHandler3();
-	}
-}
+
 static void GameTask( void *pvParameters )
 {
 	while( 1 ){
@@ -84,16 +133,18 @@ static void GameTask( void *pvParameters )
 		vTaskDelay( 10 );
 	}
 }
+
 //Main Function
 int main(void)
 {
 	prvInit();
-	if( STM_EVAL_PBGetState( BUTTON_USER ) )
-		demoMode = 1;
-	xTaskCreate( GameTask, (signed char*) "GameTask", 128, NULL, tskIDLE_PRIORITY + 1, NULL );
-	xTaskCreate( GameEventTask1, (signed char*) "GameEventTask1", 128, NULL, tskIDLE_PRIORITY + 1, NULL );
-	xTaskCreate( GameEventTask2, (signed char*) "GameEventTask2", 128, NULL, tskIDLE_PRIORITY + 1, NULL );
-	xTaskCreate( GameEventTask3, (signed char*) "GameEventTask3", 128, NULL, tskIDLE_PRIORITY + 1, NULL );
+	xQueueHandle t_mutex = xSemaphoreCreateMutex();
+	if (!t_mutex) {
+	//	ReportError("Failed to create t_mutex");
+		while(1);
+	}
+	xTaskCreate( GameTask, (char *) "GameTask", 128, NULL, tskIDLE_PRIORITY + 1, NULL );
+	xTaskCreate( Usart1EventTask, (char *) "GameEventTask1", 128, NULL, tskIDLE_PRIORITY + 1, NULL );
 	//Call Scheduler
 	vTaskStartScheduler();
 }
