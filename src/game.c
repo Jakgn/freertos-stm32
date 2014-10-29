@@ -28,18 +28,33 @@ static uint16_t color_array[] = {LCD_COLOR_GREY, LCD_COLOR_BLUE,
 
 void Usart1_EventHandler()
 {
+	int16_t tmpColor;
+	int8_t i, j = 0;
     while(1)
     {
         while(USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == RESET);
         char t = USART_ReceiveData(USART1);
+		/* like shot zombie, use the four buttons(v, c, x, z)
+		   to offset the boxs which are belong to four row	  */
 		if(t == 'v' && order[0] == 0)
 			clickRight = 1;
-		if(t == 'c' && order[0] == 1)
+		else if(t == 'c' && order[0] == 1)
 			clickRight = 1;
-		if(t == 'x' && order[0] == 2)
+		else if(t == 'x' && order[0] == 2)
 			clickRight = 1;
-		if(t == 'z' && order[0] == 3)
+		else if(t == 'z' && order[0] == 3)
 			clickRight = 1;
+		/* If click the wrong button, the current box will blink */
+		else{
+			tmpColor = colorOrder[0];
+			for(i=0 ; i < 8 ; i++){
+				if(j ^= 1)
+					colorOrder[0] = LCD_COLOR_WHITE;
+				else
+					colorOrder[0] = tmpColor;
+				vTaskDelay(50 / portTICK_PERIOD_MS);
+			}
+		}
         if ((t == '\r')) {
             while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET);
             USART_SendData(USART1, t);
@@ -68,7 +83,7 @@ void GAME_Update()
 			order[i] = order[i+1];
 			colorOrder[i] = colorOrder[i+1];
 		}
-		/* random for box appear*/
+		/* box appear ramdonly in four rows */
 		while (RNG_GetFlagStatus(RNG_FLAG_DRDY) != SET);
 		posX_index = RNG_GetRandomNumber() % rowOfBox;
 		order[numOfBox - 1] = posX_index;
@@ -86,8 +101,6 @@ void GAME_Render()
 		LCD_SetTextColor( color_array[ colorOrder[i] ] );
 		LCD_DrawFullRect( boxPosX[ order[i] ], boxPosY[i], boxW, boxH );
 	}
-	//char *test = "hello";
-	//LCD_DisplayStringLine(50, test);
 	/* Change the layer */
 	if(swh == 1){
 		swh = 2;
@@ -100,6 +113,4 @@ void GAME_Render()
 		LCD_SetLayer( LCD_FOREGROUND_LAYER );
 		LCD_SetTransparency(0x00);
 	}
-
-	//LCD_DrawLine( 10, LCD_PIXEL_HEIGHT / 2, LCD_PIXEL_WIDTH - 20, LCD_DIR_HORIZONTAL );
 }

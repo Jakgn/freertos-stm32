@@ -120,6 +120,7 @@ void prvInit()
 	RCC_AHB2PeriphClockCmd(RCC_AHB2Periph_RNG, ENABLE);
 	RNG_Cmd(ENABLE);
 }
+
 static void Usart1EventTask( void *pvParameters )
 {
 	Usart1_EventHandler();
@@ -134,17 +135,12 @@ static void GameTask( void *pvParameters )
 	}
 }
 
-//Main Function
 int main(void)
 {
 	prvInit();
-	xQueueHandle t_mutex = xSemaphoreCreateMutex();
-	if (!t_mutex) {
-	//	ReportError("Failed to create t_mutex");
-		while(1);
-	}
+
 	xTaskCreate( GameTask, (char *) "GameTask", 128, NULL, tskIDLE_PRIORITY + 1, NULL );
-	xTaskCreate( Usart1EventTask, (char *) "GameEventTask1", 128, NULL, tskIDLE_PRIORITY + 1, NULL );
+	xTaskCreate( Usart1EventTask, (char *) "Usart1EventTask", 128, NULL, tskIDLE_PRIORITY + 1, NULL );
 	//Call Scheduler
 	vTaskStartScheduler();
 }
