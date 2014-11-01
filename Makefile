@@ -28,6 +28,7 @@ endef
 LDFLAGS += -L $(call get_library_path,libc.a)
 LDFLAGS += -L $(call get_library_path,libgcc.a)
 
+CFLAGS += -DUSER_NAME=\"$(USER)\"
 # Basic configurations
 CFLAGS += -g -std=c99
 CFLAGS += -Wall
